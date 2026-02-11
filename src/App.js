@@ -1,79 +1,73 @@
 import React, { useState } from "react";
+import { findBestBatchAggressive } from "./automation/batchFinderAggressive"; // adjust path if needed
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function botWorkflow(logFn) {
-  logFn("🔍 Initializing bot");
-  await sleep(1000);
-
-  logFn("📡 Connecting to service");
-  await sleep(1500);
-
-  logFn("📦 Processing data");
-  await sleep(2000);
-
-  logFn("🧮 Running calculations");
-  await sleep(1500);
-
-  logFn("✅ Task completed successfully");
-}
+// Example batches array (replace with your actual batches if you have them in data.js)
+const allBatches = [
+  { id: 1, store: "Instacourt Market", pay: 45, miles: 4, items: 5 },
+  { id: 2, store: "Walmart", pay: 32, miles: 6, items: 8 },
+  { id: 3, store: "Costco", pay: 50, miles: 7, items: 10 },
+  { id: 4, store: "Target", pay: 40, miles: 3, items: 6 }
+];
 
 export default function App() {
-  const [status, setStatus] = useState("Idle");
   const [logs, setLogs] = useState([]);
-  const [running, setRunning] = useState(false);
+  const [highlightedBatch, setHighlightedBatch] = useState(null);
+  const [driverStatus, setDriverStatus] = useState("Offline");
 
-  const addLog = (msg) => {
-    setLogs(prev => [...prev, `${new Date().toLocaleTimeString()} — ${msg}`]);
+  // Helper to add logs
+  const addLog = (msg) => setLogs((prev) => [...prev, msg]);
+
+  // Automation function: find best batch (aggressive)
+  const showBestBatch = () => {
+    const bestBatch = findBestBatchAggressive(allBatches);
+
+    if (!bestBatch) {
+      addLog("❌ No batch found");
+      return;
+    }
+
+    setHighlightedBatch(bestBatch);
+    addLog(`🚨 Best batch found! ${bestBatch.store} - $${bestBatch.pay}, ${bestBatch.miles} miles`);
   };
 
-  const startBot = async () => {
-    setRunning(true);
-    setStatus("Running");
-    setLogs([]);
-
-    try {
-      await botWorkflow(addLog);
-      setStatus("Finished");
-    } catch (err) {
-      addLog("❌ Error: " + err.message);
-      setStatus("Error");
-    } finally {
-      setRunning(false);
-    }
+  // Optional: go online (can call showBestBatch automatically)
+  const goOnline = () => {
+    setDriverStatus("Online");
+    addLog("🟢 Driver online");
+    showBestBatch(); // automatically show best batch when online
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: "40px auto", fontFamily: "Arial" }}>
-      <h1>Automation Bot</h1>
+    <div style={{ padding: 20, fontFamily: "Arial" }}>
+      <h2>Instacourt Driver</h2>
+      <p>Status: <b>{driverStatus}</b></p>
 
-      <p><strong>Status:</strong> {status}</p>
-
-      <button
-        onClick={startBot}
-        disabled={running}
-        style={{
-          padding: "10px 20px",
-          fontSize: "16px",
-          cursor: running ? "not-allowed" : "pointer"
-        }}
-      >
-        {running ? "Bot Running..." : "Start Bot"}
+      {/* Go Online Button */}
+      <button onClick={goOnline}>
+        {driverStatus === "Online" ? "Online" : "Go Online"}
       </button>
 
-      <div style={{
-        marginTop: 20,
-        background: "#111",
-        color: "#0f0",
-        padding: 10,
-        minHeight: 150,
-        fontFamily: "monospace",
-        overflowY: "auto"
-      }}>
-        {logs.map((l, i) => (
-          <div key={i}>{l}</div>
+      {/* Optional manual batch finder */}
+      <button onClick={showBestBatch} style={{ marginLeft: 10 }}>
+        Find Best Batch
+      </button>
+
+      {/* Highlighted batch */}
+      {highlightedBatch && (
+        <div style={{ marginTop: 20, padding: 10, border: "1px solid #333", borderRadius: 5 }}>
+          <h4>📦 Best Batch</h4>
+          <p>Store: {highlightedBatch.store}</p>
+          <p>Pay: ${highlightedBatch.pay}</p>
+          <p>Miles: {highlightedBatch.miles}</p>
+          <p>Items: {highlightedBatch.items}</p>
+        </div>
+      )}
+
+      {/* Logs */}
+      <div style={{ marginTop: 20, maxHeight: 200, overflowY: "auto", background: "#f0f0f0", padding: 10, borderRadius: 5 }}>
+        <h4>Logs:</h4>
+        {logs.map((log, idx) => (
+          <div key={idx}>{log}</div>
         ))}
       </div>
     </div>
