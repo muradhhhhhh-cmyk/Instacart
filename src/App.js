@@ -1,1 +1,0 @@
-// Content of App.js (this would be the current content from src/src/App.js)
